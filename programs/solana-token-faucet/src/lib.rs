@@ -1,4 +1,9 @@
+use crate::program_option::COption;
 use anchor_lang::prelude::*;
+use anchor_lang::solana_program::clock::Clock;
+use anchor_spl::associated_token::AssociatedToken;
+use anchor_spl::token;
+use anchor_spl::token::{Mint, MintTo, Token, TokenAccount};
 
 declare_id!("H6VGVgxYSvWfthBTs6p9r7EBqTAXn2967nF7ziQcFn1v");
 
@@ -6,7 +11,12 @@ declare_id!("H6VGVgxYSvWfthBTs6p9r7EBqTAXn2967nF7ziQcFn1v");
 pub mod solana_token_faucet {
     use super::*;
 
-    pub fn initialize(ctx: Context<Initialize>,mint: Pubkey, amount_per_claim: u64, cooldown_seconds: u64) -> Result<()> {
+    pub fn initialize(
+        ctx: Context<Initialize>,
+        mint: Pubkey,
+        amount_per_claim: u64,
+        cooldown_seconds: u64,
+    ) -> Result<()> {
         ctx.accounts.faucet_config.mint = mint;
         ctx.accounts.faucet_config.amount_per_claim = amount_per_claim;
         ctx.accounts.faucet_config.cooldown_seconds = cooldown_seconds;
@@ -17,7 +27,7 @@ pub mod solana_token_faucet {
     pub fn claim(ctx: Context<Claim>) -> Result<()> {
         let user_claim = &mut ctx.accounts.user_claim;
         let faucet_config = &ctx.accounts.faucet_config;
-        
+
         if !user_claim.can_claim(faucet_config.cooldown_seconds) {
             return Err(FaucetError::CooldownNotExpired.into());
         }
@@ -27,29 +37,29 @@ pub mod solana_token_faucet {
             to: ctx.accounts.user_ata.to_account_info(),
             authority: ctx.accounts.faucet_config.to_account_info(),
         };
-
+        let bump = ctx.accounts.faucet_config.bump;
+        let seeds: &[&[u8]] = &[b"faucet", &[bump]];
+        let signer_seeds: &[&[&[u8]]] = &[seeds];
         let cpi_context = CpiContext::new_with_signer(
             ctx.accounts.token_program.to_account_info(),
             cpi_accounts,
-            &[&[b"faucet", &[ctx.accounts.faucet_config.bump]]],
+            signer_seeds,
         );
 
         token::mint_to(cpi_context, faucet_config.amount_per_claim)?;
-        
+
         user_claim.last_claim_at = Clock::get().unwrap().unix_timestamp;
         user_claim.total_claimed += faucet_config.amount_per_claim;
-        
+
         Ok(())
     }
-        
-    
 }
 
 #[derive(Accounts)]
-pub struct Initialize {
+pub struct Initialize<'info> {
     #[account(mut, signer)]
     pub mint_authority: Signer<'info>,
-    #[account(mut, init,  payer = mint_authority, space = FaucetConfig::LEN, seeds = [b"faucet"], bump)]
+    #[account(init,  payer = mint_authority, space = FaucetConfig::LEN, seeds = [b"faucet"], bump)]
     pub faucet_config: Account<'info, FaucetConfig>,
     pub system_program: Program<'info, System>,
 }
@@ -59,7 +69,7 @@ pub struct FaucetConfig {
     pub mint: Pubkey,
     pub amount_per_claim: u64,
     pub cooldown_seconds: u64,
-    pub bump: u8
+    pub bump: u8,
 }
 
 impl FaucetConfig {
@@ -70,7 +80,7 @@ impl FaucetConfig {
 pub struct UserClaim {
     pub user: Pubkey,
     pub last_claim_at: i64,
-    pub total_claimed: u64
+    pub total_claimed: u64,
 }
 
 impl UserClaim {
@@ -86,7 +96,7 @@ impl UserClaim {
 pub struct Claim<'info> {
     #[account(mut, signer)]
     pub user: Signer<'info>,
-    #[account(mut, init_if_needed, payer = user, space = UserClaim::LEN, seeds = [b"user-claim", user.key().as_ref()], bump)]
+    #[account(init_if_needed, payer = user, space = UserClaim::LEN, seeds = [b"user-claim", user.key().as_ref()], bump)]
     pub user_claim: Account<'info, UserClaim>,
     pub faucet_config: Account<'info, FaucetConfig>,
     #[account(
@@ -102,7 +112,6 @@ pub struct Claim<'info> {
     pub system_program: Program<'info, System>,
     pub associated_token_program: Program<'info, AssociatedToken>,
 }
-    
 
 #[error_code]
 pub enum FaucetError {

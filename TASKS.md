@@ -103,12 +103,12 @@ Faucet PDA  →  mint_authority для SPL Token
 ## Tasks
 
 ### Task 1 — Anchor програма: initialize
-- [ ] `anchor init token-faucet`
-- [ ] Структура `FaucetConfig`: mint, amount_per_claim, cooldown_seconds
-- [ ] Структура `UserClaim`: user, last_claim_at, total_claimed
-- [ ] Інструкція `initialize(amount_per_claim, cooldown_seconds)`
-- [ ] PDA для faucet: seeds `[b"faucet"]`
-- [ ] Зберегти config в акаунті
+- [x] `anchor init token-faucet`
+- [x] Структура `FaucetConfig`: mint, amount_per_claim, cooldown_seconds
+- [x] Структура `UserClaim`: user, last_claim_at, total_claimed
+- [x] Інструкція `initialize(amount_per_claim, cooldown_seconds)`
+- [x] PDA для faucet: seeds `[b"faucet"]`
+- [x] Зберегти config в акаунті
 
 > Підказка: `FaucetConfig` зберігає глобальні налаштування фосету.
 > `initialize` викликається один раз адміном при деплої.
@@ -117,12 +117,12 @@ Faucet PDA  →  mint_authority для SPL Token
 ---
 
 ### Task 2 — Anchor програма: claim
-- [ ] Інструкція `claim()`
-- [ ] Створити `UserClaim` акаунт при першому claim (init_if_needed)
-- [ ] Перевірити cooldown через `Clock::get()`
-- [ ] Custom error `CooldownNotExpired`
-- [ ] CPI до Token Program: `mint_to` на ATA користувача
-- [ ] Оновити `last_claim_at` і `total_claimed`
+- [x] Інструкція `claim()`
+- [x] Створити `UserClaim` акаунт при першому claim (init_if_needed)
+- [x] Перевірити cooldown через `Clock::get()`
+- [x] Custom error `CooldownNotExpired`
+- [x] CPI до Token Program: `mint_to` на ATA користувача
+- [x] Оновити `last_claim_at` і `total_claimed`
 
 > Підказка: `init_if_needed` в атрибуті акаунта створює акаунт
 > якщо він не існує, або використовує існуючий:
@@ -141,9 +141,9 @@ Faucet PDA  →  mint_authority для SPL Token
 ---
 
 ### Task 3 — Тести
-- [ ] Тест успішного claim
-- [ ] Тест що другий claim до cooldown повертає помилку
-- [ ] Тест claim після cooldown (маніпуляція часом через `warp_to_slot`)
+- [x] Тест успішного claim
+- [x] Тест що другий claim до cooldown повертає помилку
+- [x] Тест claim після cooldown (маніпуляція часом через `warp_to_slot`)
 
 > Підказка: в тестах можна змінити час через:
 > ```ts
